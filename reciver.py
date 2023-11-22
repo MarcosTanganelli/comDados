@@ -32,30 +32,14 @@ def sinal_recebido(ip):
     cliente.close()
     return dados_recebidos
 
-def sinal_descriptografado(ip, sinal):
-    # Configurações do cliente
-    host_servidor = ip
-    porta_servidor = 12345
-    # Criação do socket do cliente
-    cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    cliente.connect((host_servidor, porta_servidor))
+def sinal_descriptografado(sinal):
     mensagem_bits = manchester_diferencial_para_bits(sinal)
     print(f"Mensagem decodificada (binário): {mensagem_bits}")
-    cliente.close()
     return mensagem_bits
 
-def sinal_txt(ip, bits):
-    # Configurações do cliente
-    host_servidor = ip
-    porta_servidor = 12345
-    # Criação do socket do cliente
-    cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    cliente.connect((host_servidor, porta_servidor))
-    # Converte os bits de volta para a mensagem original
+def sinal_txt(bits):
     mensagem_decodificada = ''.join([chr(int(bits[i:i+8], 2)) for i in range(0, len(bits), 8)])
     print(f"Mensagem decodificada: {mensagem_decodificada}")
-    # Fecha a conexão
-    cliente.close()
     return mensagem_decodificada
 
 def pag_receiver(ip):
@@ -65,12 +49,12 @@ def pag_receiver(ip):
         entry_cripto.delete(0, tk.END)
         entry_cripto.insert(0, sinal)
 
-        bits = sinal_descriptografado(ip, sinal)
+        bits = sinal_descriptografado(sinal)
         entry_binary.config(state="normal")
         entry_binary.delete(0, tk.END)
         entry_binary.insert(0, bits)
 
-        texto_decodificado = sinal_txt(ip, bits)
+        texto_decodificado = sinal_txt(bits)
         entry_txt.config(state="normal")
         entry_txt.delete(0, tk.END)
         entry_txt.insert(0, texto_decodificado)
@@ -88,17 +72,16 @@ def pag_receiver(ip):
     janela_receiver = tk.Toplevel()
     janela_receiver.title("Receiver")
     janela_receiver.resizable(False, False)
-    janela_receiver.grab_set()
     janela_receiver.geometry("300x300")
 
     msg_cripto = tk.Label(janela_receiver, text="Mensagem criptografada:")
-    entry_cripto = tk.Entry(janela_receiver, width=20, state="disabled")
+    entry_cripto = tk.Entry(janela_receiver, width=20)
 
     msg_binary = tk.Label(janela_receiver, text="Mensagem em binário:")
-    entry_binary = tk.Entry(janela_receiver, width=20, state="disabled")
+    entry_binary = tk.Entry(janela_receiver, width=20)
 
     msg_txt = tk.Label(janela_receiver, text="Mensagem descriptografada:")
-    entry_txt = tk.Entry(janela_receiver, width=20, state="disabled")
+    entry_txt = tk.Entry(janela_receiver, width=20)
 
     msg_cripto.pack(pady=10)
     entry_cripto.pack(pady=10)
