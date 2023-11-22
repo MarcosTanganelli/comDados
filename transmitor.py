@@ -1,6 +1,7 @@
 import socket
 import tkinter as tk
-
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 def string_para_binario(mensagem):
     return ''.join(format(ord(char), '08b') for char in mensagem)
@@ -13,21 +14,51 @@ def manchester_diferencial(bits):
             manchester += '01' if ultimo_estado == '0' else '10'
         else:
             manchester += '10' if ultimo_estado == '0' else '01'
+            
         ultimo_estado = bit
     return manchester
 
 
 def pag_transmitor(ip):
     def make(ip, x):
-        sinal = sinal_enviado(ip, x)
+        sinal_enviado(ip, x)
         binario = string_para_binario(x)
+        cript = manchester_diferencial(binario)
         entry_binary.insert(0, binario)
-        entry_cripto.insert(0, manchester_diferencial(binario))
+        entry_cripto.insert(0, cript)
+        plot_decoded_message(cript)
+
+    def plot_decoded_message(decoded_message):
+        # Criar uma janela para o gráfico
+        # plot_window = tk.Toplevel()
+        # plot_window.title("Decoded Message Plot")
+
+        # Criar uma figura do Matplotlib
+        fig = Figure(figsize=(5, 4), dpi=100)
+        plot = fig.add_subplot(1, 1, 1)
+
+        # Criar uma onda quadrada alternando rapidamente entre 0 e 1
+        square_wave = []
+        for val in decoded_message:
+            square_wave.extend([val, val])
+
+        # Plotar a onda quadrada
+        plot.plot(square_wave, drawstyle='steps-post')
+
+        # Adicionar rótulos
+        plot.set_title("Decoded Message Plot")
+        plot.set_xlabel("Index")
+        plot.set_ylabel("ASCII Value")
+
+        # Incorporar a figura no Tkinter
+        canvas = FigureCanvasTkAgg(fig, master=janela_transmitor)
+        widget_canvas = canvas.get_tk_widget()
+        widget_canvas.pack(expand=True, fill=tk.BOTH)
+
 
     janela_transmitor = tk.Toplevel()
     janela_transmitor.title("Transmitor")
-    janela_transmitor.resizable(False, False)
-    janela_transmitor.geometry("300x300")
+    janela_transmitor.geometry("600x600")
     insert_msg = tk.Label(janela_transmitor, text="Insira a Mensagem:")
     entry_insert = tk.Entry(janela_transmitor, width=20)
     msg_binary = tk.Label(janela_transmitor, text="Mensagem em binário:")

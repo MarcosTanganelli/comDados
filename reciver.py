@@ -2,6 +2,8 @@ import tkinter as tk
 import socket
 import threading
 import time
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 def manchester_diferencial_para_bits(manchester):
     bits = ''
@@ -42,7 +44,37 @@ def sinal_txt(bits):
     print(f"Mensagem decodificada: {mensagem_decodificada}")
     return mensagem_decodificada
 
+
+
+
 def pag_receiver(ip):
+    def plot_decoded_message(decoded_message):
+            # Criar uma janela para o gráfico
+            # plot_window = tk.Toplevel()
+            # plot_window.title("Decoded Message Plot")
+
+            # Criar uma figura do Matplotlib
+            fig = Figure(figsize=(5, 4), dpi=100)
+            plot = fig.add_subplot(1, 1, 1)
+
+            # Criar uma onda quadrada alternando rapidamente entre 0 e 1
+            square_wave = []
+            for val in decoded_message:
+                square_wave.extend([val, val])
+
+            # Plotar a onda quadrada
+            plot.plot(square_wave, drawstyle='steps-post')
+
+            # Adicionar rótulos
+            plot.set_title("Decoded Message Plot")
+            plot.set_xlabel("Index")
+            plot.set_ylabel("ASCII Value")
+
+            # Incorporar a figura no Tkinter
+            canvas = FigureCanvasTkAgg(fig, master=janela_receiver)
+            widget_canvas = canvas.get_tk_widget()
+            widget_canvas.pack(expand=True, fill=tk.BOTH)
+            
     def preencher_lacunas(sinal):
         # Preencher as entradas com o sinal recebido
         entry_cripto.config(state="normal")
@@ -58,6 +90,8 @@ def pag_receiver(ip):
         entry_txt.config(state="normal")
         entry_txt.delete(0, tk.END)
         entry_txt.insert(0, texto_decodificado)
+        plot_decoded_message(sinal)
+        
 
     def verificar_sinal():
         while True:
@@ -71,8 +105,7 @@ def pag_receiver(ip):
 
     janela_receiver = tk.Toplevel()
     janela_receiver.title("Receiver")
-    janela_receiver.resizable(False, False)
-    janela_receiver.geometry("300x300")
+    janela_receiver.geometry("500x500")
 
     msg_cripto = tk.Label(janela_receiver, text="Mensagem criptografada:")
     entry_cripto = tk.Entry(janela_receiver, width=20)
