@@ -1,4 +1,7 @@
+import tkinter as tk
 import socket
+import threading
+import time
 
 def manchester_diferencial_para_bits(manchester):
     bits = ''
@@ -16,27 +19,98 @@ def manchester_diferencial_para_bits(manchester):
         ultimo_estado = bits[-1]
     return bits
 
-def pag_reciver():
-    print("Here")
-# Configurações do cliente
-host_servidor = '127.0.0.1'
-porta_servidor = 12345
+def sinal_recebido(ip):
+    # Configurações do cliente
+    host_servidor = ip
+    porta_servidor = 12345
+    # Criação do socket do cliente
+    cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    cliente.connect((host_servidor, porta_servidor))
+    # Recebe dados do servidor
+    dados_recebidos = cliente.recv(1024).decode()
+    print(f"Dados recebidos (Manchester Diferencial): {dados_recebidos}")
+    cliente.close()
+    return dados_recebidos
 
-# Criação do socket do cliente
-cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-cliente.connect((host_servidor, porta_servidor))
+def sinal_descriptografado(ip, sinal):
+    # Configurações do cliente
+    host_servidor = ip
+    porta_servidor = 12345
+    # Criação do socket do cliente
+    cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    cliente.connect((host_servidor, porta_servidor))
+    mensagem_bits = manchester_diferencial_para_bits(sinal)
+    print(f"Mensagem decodificada (binário): {mensagem_bits}")
+    cliente.close()
+    return mensagem_bits
 
-# Recebe dados do servidor
-dados_recebidos = cliente.recv(1024).decode()
-mensagem_bits = manchester_diferencial_para_bits(dados_recebidos)
+def sinal_txt(ip, bits):
+    # Configurações do cliente
+    host_servidor = ip
+    porta_servidor = 12345
+    # Criação do socket do cliente
+    cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    cliente.connect((host_servidor, porta_servidor))
+    # Converte os bits de volta para a mensagem original
+    mensagem_decodificada = ''.join([chr(int(bits[i:i+8], 2)) for i in range(0, len(bits), 8)])
+    print(f"Mensagem decodificada: {mensagem_decodificada}")
+    # Fecha a conexão
+    cliente.close()
+    return mensagem_decodificada
 
-print(f"Dados recebidos (Manchester Diferencial): {dados_recebidos}")
-print(f"Mensagem decodificada (binário): {mensagem_bits}")
+def pag_receiver(ip):
+    def preencher_lacunas(sinal):
+        # Preencher as entradas com o sinal recebido
+        entry_cripto.config(state="normal")
+        entry_cripto.delete(0, tk.END)
+        entry_cripto.insert(0, sinal)
 
-# Converte os bits de volta para a mensagem original
-mensagem_decodificada = ''.join([chr(int(mensagem_bits[i:i+8], 2)) for i in range(0, len(mensagem_bits), 8)])
+        bits = sinal_descriptografado(ip, sinal)
+        entry_binary.config(state="normal")
+        entry_binary.delete(0, tk.END)
+        entry_binary.insert(0, bits)
 
-print(f"Mensagem decodificada: {mensagem_decodificada}")
+        texto_decodificado = sinal_txt(ip, bits)
+        entry_txt.config(state="normal")
+        entry_txt.delete(0, tk.END)
+        entry_txt.insert(0, texto_decodificado)
 
-# Fecha a conexão
-cliente.close()
+    def verificar_sinal():
+        while True:
+            try:
+                sinal = sinal_recebido(ip)
+                janela_receiver.after(0, preencher_lacunas, sinal)
+                time.sleep(1)  # Aguarda 1 segundo antes de verificar novamente
+            except Exception as e:
+                print(f"Erro ao verificar sinal: {e}")
+                time.sleep(1)  # Aguarda 1 segundo em caso de erro
+
+    janela_receiver = tk.Toplevel()
+    janela_receiver.title("Receiver")
+    janela_receiver.resizable(False, False)
+    janela_receiver.grab_set()
+    janela_receiver.geometry("300x300")
+
+    msg_cripto = tk.Label(janela_receiver, text="Mensagem criptografada:")
+    entry_cripto = tk.Entry(janela_receiver, width=20, state="disabled")
+
+    msg_binary = tk.Label(janela_receiver, text="Mensagem em binário:")
+    entry_binary = tk.Entry(janela_receiver, width=20, state="disabled")
+
+    msg_txt = tk.Label(janela_receiver, text="Mensagem descriptografada:")
+    entry_txt = tk.Entry(janela_receiver, width=20, state="disabled")
+
+    msg_cripto.pack(pady=10)
+    entry_cripto.pack(pady=10)
+    msg_binary.pack(pady=10)
+    entry_binary.pack(pady=10)
+    msg_txt.pack(pady=10)
+    entry_txt.pack(pady=10)
+
+    # Inicia uma thread para verificar continuamente o sinal
+    thread_verificar_sinal = threading.Thread(target=verificar_sinal, daemon=True)
+    thread_verificar_sinal.start()
+
+    janela_receiver.mainloop()
+
+# Resto do código permanece o mesmo...
