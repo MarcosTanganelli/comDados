@@ -5,21 +5,21 @@ import time
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-def manchester_diferencial_para_bits(manchester):
-    bits = ''
-    ultimo_estado = '0'
-    for i in range(0, len(manchester), 2):
-        transicao = manchester[i:i+2]
-        if transicao == '01' and ultimo_estado == '0':
-            bits += '0'
-        elif transicao == '10' and ultimo_estado == '0':
-            bits += '1'
-        elif transicao == '10' and ultimo_estado == '1':
-            bits += '0'
-        elif transicao == '01' and ultimo_estado == '1':
-            bits += '1'
-        ultimo_estado = bits[-1]
-    return bits
+def manchester_decode(data):
+    # Verifica se a entrada é uma string e a converte em uma lista se necessário
+    if isinstance(data, str):
+        data = [int(bit) for bit in data]
+
+
+    result = []
+    data.insert(0, '1')
+
+    for i in range(0, len(data) - 1, 2):
+        result.append('1') if data[i] == data[i + 1] else result.append('0')
+
+    # Convertendo a lista resultante de volta para uma string
+    result_string = ''.join(result)
+    return result_string
 
 def sinal_recebido(ip):
     # Configurações do cliente
@@ -35,7 +35,7 @@ def sinal_recebido(ip):
     return dados_recebidos
 
 def sinal_descriptografado(sinal):
-    mensagem_bits = manchester_diferencial_para_bits(sinal)
+    mensagem_bits = manchester_decode(sinal)
     print(f"Mensagem decodificada (binário): {mensagem_bits}")
     return mensagem_bits
 
