@@ -8,6 +8,9 @@ def string_para_binario(mensagem):
 
 def manchester_encode(data):
     
+    if isinstance(data, str):
+        data = [int(bit) for bit in data]
+
     encoded_signal = ['1']
 
     for bit in data:
@@ -30,8 +33,8 @@ def manchester_encode(data):
                 encoded_signal.append('1')
 
     encoded_signal.pop(0)
-    string_signal = ''.join(encoded_signal)
-    return string_signal
+    result_string = ''.join(map(str, encoded_signal))
+    return result_string
 
 
 def pag_transmitor(ip):
@@ -39,7 +42,9 @@ def pag_transmitor(ip):
         sinal_enviado(ip, x)
         binario = string_para_binario(x)
         cript = manchester_encode(binario)
+        entry_binary.delete(0, tk.END)
         entry_binary.insert(0, binario)
+        entry_cripto.delete(0, tk.END)
         entry_cripto.insert(0, cript)
         plot_decoded_message(cript)
 

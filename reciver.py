@@ -13,7 +13,23 @@ def manchester_decode(data):
     for i in range(0, len(data) - 1, 2):
         result.append('1') if data[i] == data[i + 1] else result.append('0')
 
-    return result
+    result_string = ''.join(map(str, result))
+    return result_string
+
+
+def sinal_txt(binario):
+    try:
+        # Dividindo a string binária em partes de 8 bits
+        bytes_binarios = [binario[i:i+8] for i in range(0, len(binario), 8)]
+
+        # Convertendo cada byte para um número inteiro e, em seguida, para um caractere ASCII
+        texto = ''.join([chr(int(byte, 2)) for byte in bytes_binarios])
+
+        # Retornando a string resultante
+        return texto
+    except ValueError:
+        # Se houver um erro ao converter, retorna uma mensagem de erro
+        return "Erro: A entrada não é uma string binária válida."
 
 def sinal_recebido(ip):
     # Configurações do cliente
@@ -33,10 +49,6 @@ def sinal_descriptografado(sinal):
     print(f"Mensagem decodificada (binário): {mensagem_bits}")
     return mensagem_bits
 
-def sinal_txt(bits):
-    mensagem_decodificada = ''.join([chr(int(bits[i:i+8], 2)) for i in range(0, len(bits), 8)])
-    print(f"Mensagem decodificada: {mensagem_decodificada}")
-    return mensagem_decodificada
 
 
 
@@ -122,5 +134,3 @@ def pag_receiver(ip):
     thread_verificar_sinal.start()
 
     janela_receiver.mainloop()
-
-# Resto do código permanece o mesmo...
