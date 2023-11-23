@@ -5,16 +5,32 @@ import tkinter as tk
 def string_para_binario(mensagem):
     return ''.join(format(ord(char), '08b') for char in mensagem)
 
-def manchester_diferencial(bits):
-    manchester = ''
-    ultimo_estado = '0'
-    for bit in bits:
-        if bit == '0':
-            manchester += '01' if ultimo_estado == '0' else '10'
+def manchester_encode(data):
+    
+    encoded_signal = ['1']
+
+    for bit in data:
+        last = encoded_signal[-1]
+        if bit == 0:
+            if last == '1':
+                encoded_signal.append('0')  
+                encoded_signal.append('1')  
+            else :
+                encoded_signal.append('1')
+                encoded_signal.append('0')
+
         else:
-            manchester += '10' if ultimo_estado == '0' else '01'
-        ultimo_estado = bit
-    return manchester
+            if last == '1':
+                encoded_signal.append('1') 
+                encoded_signal.append('0')  
+
+            else:
+                encoded_signal.append('0')
+                encoded_signal.append('1')
+
+    encoded_signal.pop(0)
+    string_signal = ''.join(encoded_signal)
+    return string_signal
 
 
 def pag_transmitor(ip):
@@ -22,7 +38,7 @@ def pag_transmitor(ip):
         sinal = sinal_enviado(ip, x)
         binario = string_para_binario(x)
         entry_binary.insert(0, binario)
-        entry_cripto.insert(0, manchester_diferencial(binario))
+        entry_cripto.insert(0, manchester_encode(binario))
 
     janela_transmitor = tk.Toplevel()
     janela_transmitor.title("Transmitor")
@@ -65,7 +81,7 @@ def sinal_enviado(ip, txt):
         # Converte a mensagem para binário
         mensagem_binaria = string_para_binario(txt)
         # Aplica a codificação Manchester Diferencial
-        mensagem_manchester = manchester_diferencial(mensagem_binaria)
+        mensagem_manchester = manchester_encode(mensagem_binaria)
         # Envia dados para o cliente usando Manchester Diferencial
         conexao.send(mensagem_manchester.encode())
         # Fecha a conexão
