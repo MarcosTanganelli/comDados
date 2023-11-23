@@ -46,6 +46,12 @@ def manchester_decode(data):
 
 
 # Exemplo de uso
-data_bits = '10011001100110011001100110011001100110011001100110011001100110011001100110011001'
-manchester_decoded_signal = manchester_decode(data_bits)
-print("Manchester decoding:", manchester_decoded_signal)
+data_bits = '0110111101101001'
+# 10011001100110011001100110011001 cript
+print(data_bits)
+manchester_encoded_signal = manchester_encode(data_bits)
+manchester_decoded_signal = manchester_decode(manchester_encoded_signal)
+
+print("Manchester encoding:", manchester_encoded_signal)
+print("Manchester encoding:", manchester_decoded_signal)
+

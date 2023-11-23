@@ -6,20 +6,14 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 def manchester_decode(data):
-    # Verifica se a entrada é uma string e a converte em uma lista se necessário
     if isinstance(data, str):
         data = [int(bit) for bit in data]
-
-
     result = []
     data.insert(0, '1')
-
     for i in range(0, len(data) - 1, 2):
         result.append('1') if data[i] == data[i + 1] else result.append('0')
 
-    # Convertendo a lista resultante de volta para uma string
-    result_string = ''.join(result)
-    return result_string
+    return result
 
 def sinal_recebido(ip):
     # Configurações do cliente
