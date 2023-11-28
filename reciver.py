@@ -4,6 +4,23 @@ import threading
 import time
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
+from base64 import urlsafe_b64encode, urlsafe_b64decode
+import os
+
+def descriptografar(chave, sinal_criptografado):
+    # Extrai o IV do sinal criptografado
+    iv = sinal_criptografado[:16]
+
+    # Cria um objeto de cifra AES com a chave e o modo CFB
+    cipher = Cipher(algorithms.AES(chave), modes.CFB(iv), backend=default_backend())
+
+    # Descriptografa os dados
+    dados_descriptografados = cipher.decryptor().update(sinal_criptografado[16:]) + cipher.decryptor().finalize()
+
+    return dados_descriptografados
 
 def manchester_decode(data):
     if isinstance(data, str):
@@ -44,7 +61,7 @@ def sinal_recebido(ip):
     cliente.close()
     return dados_recebidos
 
-def sinal_descriptografado(sinal):
+def sinal_decodlinha(sinal):
     mensagem_bits = manchester_decode(sinal)
     print(f"Mensagem decodificada (binário): {mensagem_bits}")
     return mensagem_bits
@@ -86,11 +103,14 @@ def pag_receiver(ip):
         entry_cripto.config(state="normal")
         entry_cripto.delete(0, tk.END)
         entry_cripto.insert(0, sinal)
-
-        bits = sinal_descriptografado(sinal)
-        entry_binary.config(state="normal")
-        entry_binary.delete(0, tk.END)
-        entry_binary.insert(0, bits)
+        descripto = descriptografar(sinal)
+        entry_decripto.config(state="normal")
+        entry_decripto.delete(0, tk.END)
+        entry_decripto.insert(0, bits)
+        bits = sinal_decodlinha(descripto)
+        entry_codlinha.config(state="normal")
+        entry_codlinha.delete(0, tk.END)
+        entry_codlinha.insert(0, bits)
 
         texto_decodificado = sinal_txt(bits)
         entry_txt.config(state="normal")
@@ -116,18 +136,29 @@ def pag_receiver(ip):
     msg_cripto = tk.Label(janela_receiver, text="Mensagem criptografada:")
     entry_cripto = tk.Entry(janela_receiver, width=20)
 
-    msg_binary = tk.Label(janela_receiver, text="Mensagem em binário:")
-    entry_binary = tk.Entry(janela_receiver, width=20)
+    msg_decripto = tk.Label(janela_receiver, text="Mensagem descriptografada:")
+    entry_decripto = tk.Entry(janela_receiver, width=20)
 
-    msg_txt = tk.Label(janela_receiver, text="Mensagem descriptografada:")
+    msg_codlinha = tk.Label(janela_receiver, text="Mensagem em codigo de linha:")
+    entry_codlinha = tk.Entry(janela_receiver, width=20)
+
+    msg_binario = tk.Label(janela_receiver, text="Mensagem em binario:")
+    entry_binario = tk.Entry(janela_receiver, width=20)
+
+    msg_txt = tk.Label(janela_receiver, text="Mensagem :")
     entry_txt = tk.Entry(janela_receiver, width=20)
 
     msg_cripto.pack(pady=10)
     entry_cripto.pack(pady=10)
-    msg_binary.pack(pady=10)
-    entry_binary.pack(pady=10)
+    msg_decripto.pack(pady=10)
+    entry_decripto.pack(pady=10)
+    msg_codlinha.pack(pady=10)
+    entry_codlinha.pack(pady=10)
+    msg_binario.pack(pady=10)
+    entry_binario.pack(pady=10)
     msg_txt.pack(pady=10)
     entry_txt.pack(pady=10)
+
 
     # Inicia uma thread para verificar continuamente o sinal
     thread_verificar_sinal = threading.Thread(target=verificar_sinal, daemon=True)

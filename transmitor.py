@@ -2,6 +2,11 @@ import socket
 import tkinter as tk
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
+from base64 import urlsafe_b64encode, urlsafe_b64decode
+import os
 
 def string_para_binario(mensagem):
     return ''.join(format(ord(char), '08b') for char in mensagem)
@@ -36,17 +41,37 @@ def manchester_encode(data):
     result_string = ''.join(map(str, encoded_signal))
     return result_string
 
+def criptografar(chave, sinal_binario):
+    binary = sinal_binario.encode('utf-8')
+    # Gera um vetor de inicialização (IV) aleatório
+    iv = os.urandom(16)
+
+    # Cria um objeto de cifra AES com a chave e o modo CBC
+    cipher = Cipher(algorithms.AES(chave), modes.CFB(iv), backend=default_backend())
+
+    # Cria um objeto de enchimento PKCS7
+    padder = padding.PKCS7(128).padder()
+
+    # Aplica o enchimento aos dados
+    dados_encriptados = cipher.encryptor().update(padder.update(binary) + padder.finalize())
+
+    # Retorna o IV concatenado com os dados criptografados
+    return iv + dados_encriptados
+
 
 def pag_transmitor(ip):
     def make(ip, x):
         sinal_enviado(ip, x)
         binario = string_para_binario(x)
-        cript = manchester_encode(binario)
+        cod_linha = manchester_encode(binario)
+        cript = criptografar(b'0111101010101011', cod_linha)
         entry_binary.delete(0, tk.END)
         entry_binary.insert(0, binario)
+        msg_codlinha.delete(0, tk.END)
+        msg_codlinha.insert(0, cod_linha)
         entry_cripto.delete(0, tk.END)
         entry_cripto.insert(0, cript)
-        plot_decoded_message(cript)
+        plot_decoded_message(cod_linha)
 
     def plot_decoded_message(decoded_message):
         # Criar uma janela para o gráfico
@@ -83,6 +108,8 @@ def pag_transmitor(ip):
     entry_insert = tk.Entry(janela_transmitor, width=20)
     msg_binary = tk.Label(janela_transmitor, text="Mensagem em binário:")
     entry_binary = tk.Entry(janela_transmitor, width=20)
+    label_codlinha = tk.Label(janela_transmitor, text="Codigo de linha:")
+    msg_codlinha = tk.Entry(janela_transmitor, width=20)
     msg_cripto = tk.Label(janela_transmitor, text="Mensagem criptografada:")
     entry_cripto = tk.Entry(janela_transmitor, width=20)
     
@@ -94,6 +121,8 @@ def pag_transmitor(ip):
     entry_insert.pack(pady=10)
     msg_binary.pack(pady=10)
     entry_binary.pack(pady=10)
+    label_codlinha.pack(pady=10)
+    msg_codlinha.pack(pady= 10)
     msg_cripto.pack(pady=10)
     entry_cripto.pack(pady=10)
     botton_enviar.pack(pady=10)
@@ -117,8 +146,8 @@ def sinal_enviado(ip, txt):
         mensagem_binaria = string_para_binario(txt)
         # Aplica a codificação Manchester Diferencial
         mensagem_manchester = manchester_encode(mensagem_binaria)
-        # Envia dados para o cliente usando Manchester Diferencial
-        conexao.send(mensagem_manchester.encode())
+        msg_criptografada = criptografar(b'0111101010101011', mensagem_manchester)
+        conexao.send(msg_criptografada.encode())
         # Fecha a conexão
         conexao.close()
         servidor.close()

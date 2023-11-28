@@ -5,7 +5,7 @@ import transmitor
 janela = tk.Tk()
 janela.title("Menu")
 janela.geometry("200x200")
-valor_inicial = "192.168.15.6"
+valor_inicial = "10.181.31.190"
 # Criação dos elementos da interface gráfica
 label_ip = tk.Label(text="IP do transmissor:")
 entry_ip = tk.Entry(width=20)

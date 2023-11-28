@@ -1,3 +1,8 @@
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
+from base64 import urlsafe_b64encode, urlsafe_b64decode
+import os
 def manchester_encode(data):
     
     if isinstance(data, str):
@@ -61,26 +66,41 @@ def sinal_txt(binario):
 
 
 
+def criptografar(chave, sinal_binario):
+    # Gera um vetor de inicialização (IV) aleatório
+    iv = os.urandom(16)
 
+    # Cria um objeto de cifra AES com a chave e o modo CFB
+    cipher = Cipher(algorithms.AES(chave), modes.CFB(iv), backend=default_backend())
 
+    # Criptografa os dados
+    dados_encriptados = cipher.encryptor().update(sinal_binario) + cipher.encryptor().finalize()
 
+    # Retorna o IV concatenado com os dados criptografados
+    return iv + dados_encriptados
 
-# Exemplo de uso
-# data_bits = '10011001100110011001100110011001'
-# 
-txt = 'oi'
-data_bits = string_para_binario(txt)
-machester = manchester_encode(data_bits)
-binario = manchester_decode(machester)
-txt = sinal_txt(binario)
+def descriptografar(chave, sinal_criptografado):
+    # Extrai o IV do sinal criptografado
+    iv = sinal_criptografado[:16]
 
-print("txt: ", txt)
-print("///////////////////////\n binario:", data_bits)
-print("///////////////////////\nManchester :", machester)
+    # Cria um objeto de cifra AES com a chave e o modo CFB
+    cipher = Cipher(algorithms.AES(chave), modes.CFB(iv), backend=default_backend())
 
+    # Descriptografa os dados
+    dados_descriptografados = cipher.decryptor().update(sinal_criptografado[16:]) + cipher.decryptor().finalize()
 
+    return dados_descriptografados
 
-print("///////////////////////\nbinario:", binario)
-print("///////////////////////\ntxt:", txt)
+# Exemplo de uso:
+chave = '0111101010101011'  # Chave AES de 128, 192 ou 256 bits
+chave =  chave.encode()
+sinal_original = b'1010101011110101010'  # Substitua isso pelo seu sinal binário
 
+# Criptografa o sinal
+sinal_criptografado = criptografar(chave, sinal_original)
+print("Sinal criptografado:", urlsafe_b64encode(sinal_criptografado))
+
+# Descriptografa o sinal
+sinal_descriptografado = descriptografar(chave, sinal_criptografado)
+print("Sinal descriptografado:", sinal_descriptografado)
 
