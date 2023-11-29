@@ -94,7 +94,7 @@ def descriptografar(chave, sinal_criptografado):
 # Exemplo de uso:
 chave = '0111101010101011'  # Chave AES de 128, 192 ou 256 bits
 chave =  chave.encode()
-sinal_original = b'1010101011110101010'  # Substitua isso pelo seu sinal binário
+sinal_original = "teste"  # Substitua isso pelo seu sinal binário
 
 # Criptografa o sinal
 sinal_criptografado = criptografar(chave, sinal_original)

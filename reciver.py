@@ -4,23 +4,57 @@ import threading
 import time
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import padding
-from base64 import urlsafe_b64encode, urlsafe_b64decode
-import os
 
-def descriptografar(chave, sinal_criptografado):
-    # Extrai o IV do sinal criptografado
-    iv = sinal_criptografado[:16]
 
-    # Cria um objeto de cifra AES com a chave e o modo CFB
-    cipher = Cipher(algorithms.AES(chave), modes.CFB(iv), backend=default_backend())
+def mapeia(passo):
+    vec = []
+    copy_vec = []
 
-    # Descriptografa os dados
-    dados_descriptografados = cipher.decryptor().update(sinal_criptografado[16:]) + cipher.decryptor().finalize()
+    for i in range(256):
+        vec.append({'type': chr(i)})
+        copy_vec.append(i)
 
-    return dados_descriptografados
+    while not all(x == -1 for x in copy_vec):
+        if i + passo >= 256:
+            i -= 256
+        
+        tmp = copy_vec[i + passo]
+        char = f'{tmp:03d}'
+        if char != vec[i]['type']:
+            vec[i]['map'] = char
+
+        copy_vec[i + passo] = -1
+        i += passo
+
+    return vec
+
+def descriptografa(passo, criptografado):
+    num = True
+    texto_original = ''
+    vec = mapeia(passo)
+    i = 0  # Inicializa o índice fora do loop para controlar manualmente
+    letra = ''
+    while i < len(criptografado):
+        if num:
+            tmp = criptografado[i:i+3]
+            for j, item in enumerate(vec):
+                if item['map'] == tmp:
+                    letra = item['type']
+                    break
+            i += 3
+        else:
+            print(ord(criptografado[i]))
+            for j, item in enumerate(vec):
+                if item['type'] == str(criptografado[i]):
+                    for k, temp in enumerate(vec):
+                        if temp['map'] == str(j):
+                            letra = chr(k)
+                    break
+            i += 1
+        texto_original += letra
+        num = not num  # Inverte o valor de num
+
+    return texto_original
 
 def manchester_decode(data):
     if isinstance(data, str):
@@ -71,52 +105,56 @@ def sinal_decodlinha(sinal):
 
 
 def pag_receiver(ip):
-    def plot_decoded_message(decoded_message):
-            # Criar uma janela para o gráfico
-            # plot_window = tk.Toplevel()
-            # plot_window.title("Decoded Message Plot")
+    def plot_decoded_message(decoded_message, frame):
+        # Se existir um widget de gráfico anterior, destrua-o
+        if hasattr(frame, 'widget_canvas') and frame.widget_canvas.winfo_exists():
+            frame.widget_canvas.destroy()
 
-            # Criar uma figura do Matplotlib
-            fig = Figure(figsize=(5, 4), dpi=100)
-            plot = fig.add_subplot(1, 1, 1)
+        # Criar uma figura do Matplotlib
+        fig = Figure(figsize=(5, 4), dpi=100)
+        plot = fig.add_subplot(1, 1, 1)
 
-            # Criar uma onda quadrada alternando rapidamente entre 0 e 1
-            square_wave = []
-            for val in decoded_message:
-                square_wave.extend([val, val])
+        # Criar uma onda quadrada alternando rapidamente entre 0 e 1
+        square_wave = []
+        for val in decoded_message:
+            square_wave.extend([val, val])
 
-            # Plotar a onda quadrada
-            plot.plot(square_wave, drawstyle='steps-post')
+        # Plotar a onda quadrada
+        plot.plot(square_wave, drawstyle='steps-post')
 
-            # Adicionar rótulos
-            plot.set_title("Decoded Message Plot")
-            plot.set_xlabel("Index")
-            plot.set_ylabel("ASCII Value")
+        # Adicionar rótulos
+        plot.set_title("Decoded Message Plot")
+        plot.set_xlabel("Index")
+        plot.set_ylabel("ASCII Value")
 
-            # Incorporar a figura no Tkinter
-            canvas = FigureCanvasTkAgg(fig, master=janela_receiver)
-            widget_canvas = canvas.get_tk_widget()
-            widget_canvas.pack(expand=True, fill=tk.BOTH)
+        # Incorporar a figura no Tkinter
+        canvas = FigureCanvasTkAgg(fig, master=frame)
+        frame.widget_canvas = canvas.get_tk_widget()
+        frame.widget_canvas.pack(expand=True, fill=tk.BOTH)
             
-    def preencher_lacunas(sinal):
+    def preencher_lacunas(codlinha):
         # Preencher as entradas com o sinal recebido
-        entry_cripto.config(state="normal")
-        entry_cripto.delete(0, tk.END)
-        entry_cripto.insert(0, sinal)
-        descripto = descriptografar(sinal)
-        entry_decripto.config(state="normal")
-        entry_decripto.delete(0, tk.END)
-        entry_decripto.insert(0, bits)
-        bits = sinal_decodlinha(descripto)
+        decode_linha = sinal_decodlinha(codlinha)
+        criptografado = sinal_txt(decode_linha)
+        msg = descriptografa(3, criptografado)
+
         entry_codlinha.config(state="normal")
         entry_codlinha.delete(0, tk.END)
-        entry_codlinha.insert(0, bits)
+        entry_codlinha.insert(0, codlinha)
 
-        texto_decodificado = sinal_txt(bits)
-        entry_txt.config(state="normal")
-        entry_txt.delete(0, tk.END)
-        entry_txt.insert(0, texto_decodificado)
-        plot_decoded_message(sinal)
+        entry_binario.config(state="normal")
+        entry_binario.delete(0, tk.END)
+        entry_binario.insert(0, decode_linha)
+
+        entry_cripto.config(state="normal")
+        entry_cripto.delete(0, tk.END)
+        entry_cripto.insert(0, criptografado)
+
+        entry_decripto.config(state="normal")
+        entry_decripto.delete(0, tk.END)
+        entry_decripto.insert(0, msg)
+        
+        plot_decoded_message(codlinha, janela_receiver)
         
 
     def verificar_sinal():
@@ -136,7 +174,7 @@ def pag_receiver(ip):
     msg_cripto = tk.Label(janela_receiver, text="Mensagem criptografada:")
     entry_cripto = tk.Entry(janela_receiver, width=20)
 
-    msg_decripto = tk.Label(janela_receiver, text="Mensagem descriptografada:")
+    msg_decripto = tk.Label(janela_receiver, text="Mensagem:")
     entry_decripto = tk.Entry(janela_receiver, width=20)
 
     msg_codlinha = tk.Label(janela_receiver, text="Mensagem em codigo de linha:")
@@ -145,19 +183,15 @@ def pag_receiver(ip):
     msg_binario = tk.Label(janela_receiver, text="Mensagem em binario:")
     entry_binario = tk.Entry(janela_receiver, width=20)
 
-    msg_txt = tk.Label(janela_receiver, text="Mensagem :")
-    entry_txt = tk.Entry(janela_receiver, width=20)
 
-    msg_cripto.pack(pady=10)
-    entry_cripto.pack(pady=10)
-    msg_decripto.pack(pady=10)
-    entry_decripto.pack(pady=10)
     msg_codlinha.pack(pady=10)
     entry_codlinha.pack(pady=10)
     msg_binario.pack(pady=10)
     entry_binario.pack(pady=10)
-    msg_txt.pack(pady=10)
-    entry_txt.pack(pady=10)
+    msg_cripto.pack(pady=10)
+    entry_cripto.pack(pady=10)
+    msg_decripto.pack(pady=10)
+    entry_decripto.pack(pady=10)
 
 
     # Inicia uma thread para verificar continuamente o sinal
