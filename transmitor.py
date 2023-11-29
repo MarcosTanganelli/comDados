@@ -2,11 +2,6 @@ import socket
 import tkinter as tk
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import padding
-from base64 import urlsafe_b64encode, urlsafe_b64decode
-import os
 
 def string_para_binario(mensagem):
     return ''.join(format(ord(char), '08b') for char in mensagem)
@@ -99,27 +94,21 @@ def pag_transmitor(ip):
         plot_decoded_message(cod_linha, janela_transmitor)
 
     def plot_decoded_message(decoded_message, frame):
-        # Se existir um widget de gráfico anterior, destrua-o
         if hasattr(frame, 'widget_canvas') and frame.widget_canvas.winfo_exists():
             frame.widget_canvas.destroy()
 
-        # Criar uma figura do Matplotlib
         fig = Figure(figsize=(5, 4), dpi=100)
         plot = fig.add_subplot(1, 1, 1)
 
-        # Criar uma onda quadrada alternando rapidamente entre 0 e 1
         square_wave = []
         for val in decoded_message:
             square_wave.extend([val, val])
 
-        # Plotar a onda quadrada
         plot.plot(square_wave, drawstyle='steps-post')
 
-        # Adicionar rótulos
         plot.set_title("Codigo de linha")
 
 
-        # Incorporar a figura no Tkinter
         canvas = FigureCanvasTkAgg(fig, master=frame)
         frame.widget_canvas = canvas.get_tk_widget()
         frame.widget_canvas.pack(expand=True, fill=tk.BOTH)
@@ -152,20 +141,16 @@ def pag_transmitor(ip):
 
 def sinal_enviado(ip, codlinha):
     try:
-        # Configurações do servidor
         binary = codlinha.encode()
         host = ip
         porta = 12345
-        # Criação do socket do servidor
         servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         servidor.bind((host, porta))
         servidor.listen()
         print(f"Servidor ouvindo em {host}:{porta}")
-        # Aguarda a conexão do cliente
         conexao, endereco_cliente = servidor.accept()
         print(f"Conexão estabelecida com {endereco_cliente}")
         conexao.send(binary)
-        # Fecha a conexão
         conexao.close()
         servidor.close()
     except Exception as e:

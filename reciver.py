@@ -32,27 +32,18 @@ def descriptografa(passo, criptografado):
     num = True
     texto_original = ''
     vec = mapeia(passo)
-    i = 0  # Inicializa o índice fora do loop para controlar manualmente
+    i = 0  
     letra = ''
     while i < len(criptografado):
         if num:
             tmp = criptografado[i:i+3]
-            for j, item in enumerate(vec):
-                if item['map'] == tmp:
-                    letra = item['type']
-                    break
+            letra = chr(int(tmp) - passo)
             i += 3
         else:
-            print(ord(criptografado[i]))
-            for j, item in enumerate(vec):
-                if item['type'] == str(criptografado[i]):
-                    for k, temp in enumerate(vec):
-                        if temp['map'] == str(j):
-                            letra = chr(k)
-                    break
+            letra = chr(ord(criptografado[i]) - passo)
             i += 1
         texto_original += letra
-        num = not num  # Inverte o valor de num
+        num = not num  
 
     return texto_original
 
@@ -70,26 +61,19 @@ def manchester_decode(data):
 
 def sinal_txt(binario):
     try:
-        # Dividindo a string binária em partes de 8 bits
         bytes_binarios = [binario[i:i+8] for i in range(0, len(binario), 8)]
 
-        # Convertendo cada byte para um número inteiro e, em seguida, para um caractere ASCII
         texto = ''.join([chr(int(byte, 2)) for byte in bytes_binarios])
 
-        # Retornando a string resultante
         return texto
     except ValueError:
-        # Se houver um erro ao converter, retorna uma mensagem de erro
         return "Erro: A entrada não é uma string binária válida."
 
 def sinal_recebido(ip):
-    # Configurações do cliente
     host_servidor = ip
     porta_servidor = 12345
-    # Criação do socket do cliente
     cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     cliente.connect((host_servidor, porta_servidor))
-    # Recebe dados do servidor
     dados_recebidos = cliente.recv(1024).decode()
     print(f"Dados recebidos (Manchester Diferencial): {dados_recebidos}")
     cliente.close()
@@ -106,33 +90,26 @@ def sinal_decodlinha(sinal):
 
 def pag_receiver(ip):
     def plot_decoded_message(decoded_message, frame):
-        # Se existir um widget de gráfico anterior, destrua-o
         if hasattr(frame, 'widget_canvas') and frame.widget_canvas.winfo_exists():
             frame.widget_canvas.destroy()
 
-        # Criar uma figura do Matplotlib
         fig = Figure(figsize=(5, 4), dpi=100)
         plot = fig.add_subplot(1, 1, 1)
 
-        # Criar uma onda quadrada alternando rapidamente entre 0 e 1
         square_wave = []
         for val in decoded_message:
             square_wave.extend([val, val])
 
-        # Plotar a onda quadrada
         plot.plot(square_wave, drawstyle='steps-post')
 
-        # Adicionar rótulos
         plot.set_title("Codigo de linha")
 
 
-        # Incorporar a figura no Tkinter
         canvas = FigureCanvasTkAgg(fig, master=frame)
         frame.widget_canvas = canvas.get_tk_widget()
         frame.widget_canvas.pack(expand=True, fill=tk.BOTH)
             
     def preencher_lacunas(codlinha):
-        # Preencher as entradas com o sinal recebido
         decode_linha = sinal_decodlinha(codlinha)
         criptografado = sinal_txt(decode_linha)
         msg = descriptografa(3, criptografado)
@@ -161,10 +138,10 @@ def pag_receiver(ip):
             try:
                 sinal = sinal_recebido(ip)
                 janela_receiver.after(0, preencher_lacunas, sinal)
-                time.sleep(1)  # Aguarda 1 segundo antes de verificar novamente
+                time.sleep(1)  
             except Exception as e:
                 print(f"Erro ao verificar sinal: {e}")
-                time.sleep(1)  # Aguarda 1 segundo em caso de erro
+                time.sleep(1)  
 
     janela_receiver = tk.Toplevel()
     janela_receiver.title("Receiver")
@@ -193,7 +170,6 @@ def pag_receiver(ip):
     entry_decripto.pack(pady=10)
 
 
-    # Inicia uma thread para verificar continuamente o sinal
     thread_verificar_sinal = threading.Thread(target=verificar_sinal, daemon=True)
     thread_verificar_sinal.start()
 
