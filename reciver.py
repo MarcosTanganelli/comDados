@@ -123,9 +123,8 @@ def pag_receiver(ip):
         plot.plot(square_wave, drawstyle='steps-post')
 
         # Adicionar rótulos
-        plot.set_title("Decoded Message Plot")
-        plot.set_xlabel("Index")
-        plot.set_ylabel("ASCII Value")
+        plot.set_title("Codigo de linha")
+
 
         # Incorporar a figura no Tkinter
         canvas = FigureCanvasTkAgg(fig, master=frame)
